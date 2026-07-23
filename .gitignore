@@ -1,0 +1,54 @@
+# ===== Secrets =====
+# Nunca commitear claves. Se conserva solo .env.example (plantilla sin valores).
+.env
+.env.*
+!.env.example
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+
+# ===== Entornos virtuales (uv / venv) =====
+.venv/
+venv/
+
+# ===== Caches de herramientas =====
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.cache/
+
+# ===== Bases de datos generadas (se recrean desde los CSV) =====
+# DuckDB
+data/*.duckdb
+data/*.duckdb.wal
+# SQLite (motor actual) + archivos auxiliares
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.sqlite-journal
+
+# ===== Datos fuente (sensibles: precios/competencia/ventas reales) =====
+# Se ignoran por defecto para no filtrar data corporativa a un remoto.
+# Si quieres versionar la data, comenta estas 3 líneas.
+# data/precios.csv
+# data/sku.csv
+# data/venta.csv
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Editores / IDE =====
+.vscode/
+.idea/
+*.swp
