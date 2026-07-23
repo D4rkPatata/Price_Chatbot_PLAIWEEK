@@ -123,6 +123,11 @@
   table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12.5px; display: block; overflow-x: auto; }
   th, td { padding: 6px 10px; border: 1px solid var(--line); text-align: left; white-space: nowrap; }
   th { color: var(--muted); background: rgba(255,255,255,.03); }
+  /* Tablas dentro del reporte: más legibles, con celdas que envuelven texto. */
+  .insight table { font-size: 13px; margin: 12px 0; }
+  .insight th { color: var(--text); background: rgba(124,108,255,.14); font-weight: 700; }
+  .insight td, .insight th { white-space: normal; }
+  .insight tbody tr:nth-child(even) { background: rgba(255,255,255,.02); }
 
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: spin .8s linear infinite; vertical-align: -4px; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -292,20 +297,36 @@ function initDates() {
 function mdToHtml(md) {
   const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const cells = (l) => l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+  const isRow = (l) => /^\s*\|.*\|\s*$/.test(l);
+  const isSep = (l) => /^[\s|:-]+$/.test(l) && l.includes('-') && l.includes('|');
   const lines = md.split('\n');
-  let html = '', inList = false;
+  let html = '', inList = false, i = 0;
   const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
-  for (let raw of lines) {
-    const line = raw.trimEnd();
-    if (/^\s*---\s*$/.test(line)) { closeList(); html += '<hr>'; continue; }
+  while (i < lines.length) {
+    const line = lines[i].trimEnd();
+    // Tabla: fila seguida de una fila separadora |---|---|
+    if (isRow(line) && i + 1 < lines.length && isSep(lines[i+1])) {
+      closeList();
+      const head = cells(line);
+      i += 2;
+      const body = [];
+      while (i < lines.length && isRow(lines[i].trimEnd())) { body.push(cells(lines[i].trimEnd())); i++; }
+      html += '<table><thead><tr>' + head.map(h=>`<th>${inline(h)}</th>`).join('') + '</tr></thead><tbody>';
+      html += body.map(r => '<tr>' + r.map(c=>`<td>${inline(c)}</td>`).join('') + '</tr>').join('');
+      html += '</tbody></table>';
+      continue;
+    }
     let m;
-    if ((m = line.match(/^####\s+(.*)/))) { closeList(); html += `<h4>${inline(m[1])}</h4>`; }
+    if (/^\s*---\s*$/.test(line)) { closeList(); html += '<hr>'; }
+    else if ((m = line.match(/^####\s+(.*)/))) { closeList(); html += `<h4>${inline(m[1])}</h4>`; }
     else if ((m = line.match(/^###\s+(.*)/))) { closeList(); html += `<h3>${inline(m[1])}</h3>`; }
     else if ((m = line.match(/^##\s+(.*)/))) { closeList(); html += `<h2>${inline(m[1])}</h2>`; }
     else if ((m = line.match(/^#\s+(.*)/))) { closeList(); html += `<h2>${inline(m[1])}</h2>`; }
     else if ((m = line.match(/^\s*[\*\-]\s+(.*)/))) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(m[1])}</li>`; }
     else if (line.trim() === '') { closeList(); }
     else { closeList(); html += `<p>${inline(line)}</p>`; }
+    i++;
   }
   closeList();
   return html;

@@ -29,30 +29,35 @@ lo hace otro agente. Tú solo produces SQL correcto.
 ## Notas de datos (importantes para generar SQL correcto)
 - `precios`: ~1 mes reciente. Úsala para el PRECIO PROPIO reciente y el PRECIO DE COMPETENCIA
   del último relevo. "Último relevo" = el registro con la fecha MÁXIMA disponible del SKU.
-- `sku`: maestro (una fila por SKU). Única fuente de F_PRECIO_COSTO y ELASTICIDAD.
+- `sku`: maestro (una fila por SKU). Fuente de F_PRECIO_COSTO, ELASTICIDAD, FLG_MMPP
+  (1=marca propia MMPP, 0=marca comercial MMCC) y COD_SKU_COMPARABLE (el SKU espejo).
 - `ventas`: ~1 año de historia diaria. Tiene VTA_SI (venta sin impuestos), COSTO_VENTA y UNIDADES.
 - VENTANA U3M (últimos 3 meses): filtra ventas con
   ID_DIAVENTA >= date((SELECT MAX(ID_DIAVENTA) FROM ventas), '-3 months').
 - DÍA DE LA SEMANA: strftime('%w', ID_DIAVENTA) devuelve '0'(domingo) a '6'(sábado).
-- NO calcules tú el GPE ni el impacto; solo trae las CIFRAS BASE (sumas, precios, costo,
-  elasticidad). El otro agente aplica las fórmulas.
+- ELASTICIDAD: en `sku` está como MAGNITUD positiva, pero la elasticidad de demanda es NEGATIVA.
+  Devuélvela SIEMPRE con signo negativo: usa `-s.ELASTICIDAD AS elasticidad`.
+- NO calcules tú el GPE ni el impacto; solo trae las CIFRAS BASE. El otro agente aplica las fórmulas.
 
 ## Qué consultas generar (una por objetivo, cuando aplique)
 Genera una lista de queries, cada una con un nombre claro. Cubre estos objetivos:
 - "datos_base": en UNA fila trae, para el SKU objetivo:
-  * de `sku`: F_PRECIO_COSTO, ELASTICIDAD;
-  * de `precios` (fecha máxima del SKU): precio_propio y precio_competencia del último relevo;
+  * de `sku`: DESC_SKU, F_PRECIO_COSTO, `-ELASTICIDAD AS elasticidad`, FLG_MMPP, FAMILIA,
+    DESC_SUBDEPARTAMENTO, COD_SKU_COMPARABLE;
+  * de `precios` (fecha máxima del SKU): precio_propio (precio actual) y precio_competencia del último relevo;
   * de `ventas` en la ventana U3M: SUM(VTA_SI) AS vta_si_u3m, SUM(COSTO_VENTA) AS costo_venta_u3m,
     SUM(UNIDADES) AS unidades_u3m.
   Usa subconsultas o WITH para combinar los tres granos en una sola fila.
+- "sku_comparable_mmpp": para la PARIDAD MMPP/MMCC. Une el SKU objetivo con su espejo
+  (sku c ON c.COD_SKU = s.COD_SKU_COMPARABLE, con s.COD_SKU = '<objetivo>'). Trae del espejo:
+  c.COD_SKU, c.DESC_SKU, c.FLG_MMPP, c.F_PRECIO_COSTO y su precio_propio del último relevo
+  (subconsulta a `precios` por la fecha máxima de c.COD_SKU). Si el espejo no tiene precio, devuelve NULL.
 - "estacionalidad": unidades y venta (VTA_SI) por mes desde `ventas` para el SKU (todo el año),
   para ver el patrón anual; marca los meses que coinciden con la vigencia propuesta.
 - "participacion_dia_semana": SUM(UNIDADES) por día de la semana (strftime('%w', ID_DIAVENTA))
   en la ventana U3M, para recomendar el mejor día de aplicación del cambio.
 - "contexto_historico_precio": en `precios`, distintos niveles de precio_propio del SKU y las
   unidades promedio en cada nivel (cómo respondió el volumen). LIMIT 8.
-- "comparables" (opcional): precio_propio y precio_competencia promedio de otros SKU de la misma
-  FAMILIA (o DESC_SUBDEPARTAMENTO si FAMILIA es nula) del SKU objetivo. Ordena por unidades desc, LIMIT 6.
 
 ## Formato de salida (JSON estricto)
 Responde ÚNICAMENTE con un objeto JSON, sin texto adicional ni markdown.

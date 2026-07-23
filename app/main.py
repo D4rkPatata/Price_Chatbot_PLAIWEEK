@@ -58,8 +58,9 @@ def health() -> dict[str, str]:
 def list_skus() -> list[dict]:
     """SKUs seleccionables en el frontend.
 
-    Solo se listan productos CON elasticidad (los únicos que se pueden simular).
-    Los SKU sin elasticidad siguen en la base y sirven de comparables.
+    Para la demo solo se listan los SKU que tienen SKU comparable (espejo)
+    definido — los únicos con análisis MMPP/MMCC completo. El resto de SKU
+    siguen en la base y sirven de comparación.
     """
     connector = get_connector()
     try:
@@ -68,11 +69,12 @@ def list_skus() -> list[dict]:
             SELECT s.COD_SKU AS cod_sku,
                    s.DESC_SKU AS desc_sku,
                    ROUND(s.ELASTICIDAD, 2) AS elasticidad,
+                   CASE s.FLG_MMPP WHEN '1' THEN 'MMPP' ELSE 'MMCC' END AS tipo_marca,
                    ROUND(AVG(p.precio_propio), 2) AS precio_actual
             FROM sku s
             LEFT JOIN precios p ON s.COD_SKU = p.COD_SKU
-            WHERE s.ELASTICIDAD IS NOT NULL
-            GROUP BY s.COD_SKU, s.DESC_SKU, s.ELASTICIDAD
+            WHERE s.COD_SKU_COMPARABLE IS NOT NULL
+            GROUP BY s.COD_SKU, s.DESC_SKU, s.ELASTICIDAD, s.FLG_MMPP
             ORDER BY s.DESC_SKU
             """
         )

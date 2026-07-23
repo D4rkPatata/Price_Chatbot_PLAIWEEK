@@ -26,6 +26,7 @@ from app.security.sql_guard import sanitize
 _TABLES: dict[str, dict[str, Any]] = {
     "precios": {
         "csv": lambda: settings.precios_path,
+        "delimiter": ",",
         "columns": [
             ("COD_SKU", "TEXT", False), ("DESC_SKU", "TEXT", False),
             ("DESC_DIVISION", "TEXT", False), ("DESC_DEPARTAMENTO", "TEXT", False),
@@ -37,18 +38,18 @@ _TABLES: dict[str, dict[str, Any]] = {
     },
     "sku": {
         "csv": lambda: settings.sku_path,
+        "delimiter": ";",  # sku.csv viene separado por punto y coma
         "columns": [
-            ("COD_SKU", "TEXT", False), ("DESC_SKU", "TEXT", False),
-            ("DESC_MARCA", "TEXT", False), ("DESC_PROVEEDOR", "TEXT", False),
-            ("DESC_DIVISION", "TEXT", False), ("DESC_DEPARTAMENTO", "TEXT", False),
-            ("DESC_SUBDEPARTAMENTO", "TEXT", False), ("DESC_CLASE", "TEXT", False),
-            ("DESC_SUBCLASE", "TEXT", False), ("DESC_ESTADO", "TEXT", False),
-            ("FAMILIA", "TEXT", False),
+            ("COD_SKU", "TEXT", False), ("COD_SKU_COMPARABLE", "TEXT", False),
+            ("DESC_SKU", "TEXT", False),
+            ("DESC_SUBDEPARTAMENTO", "TEXT", False),
+            ("FAMILIA", "TEXT", False), ("FLG_MMPP", "TEXT", False),
             ("F_PRECIO_COSTO", "REAL", True), ("ELASTICIDAD", "REAL", True),
         ],
     },
     "ventas": {
         "csv": lambda: settings.venta_path,
+        "delimiter": ",",
         "columns": [
             ("ID_DIAVENTA", "TEXT", False), ("ID_SKU", "TEXT", False),
             ("COD_SKU", "TEXT", False),
@@ -79,7 +80,7 @@ def _load_table(con: sqlite3.Connection, name: str, spec: dict[str, Any]) -> Non
 
     csv_path: Path = spec["csv"]()
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
+        reader = csv.DictReader(f, delimiter=spec.get("delimiter", ","))
         rows = []
         for r in reader:
             row = []

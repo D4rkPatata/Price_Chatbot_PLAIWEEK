@@ -62,10 +62,12 @@ SKU = Table(
     grain="una fila por SKU",
     columns=[
         Column("COD_SKU", "TEXT", "Código de SKU. Join con precios y ventas."),
+        Column("COD_SKU_COMPARABLE", "TEXT", "Código del SKU espejo (marca opuesta) para paridad MMPP/MMCC. Join a sku para traer su precio y FLG_MMPP."),
         Column("DESC_SKU", "TEXT", "Descripción del producto."),
-        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento (fallback de comparables)."),
-        Column("FAMILIA", "TEXT", "Familia del producto (agrupador para comparables)."),
-        Column("F_PRECIO_COSTO", "REAL", "Costo unitario (sin impuestos). Usar para el GPE sugerido."),
+        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento."),
+        Column("FAMILIA", "TEXT", "Familia del producto (agrupador)."),
+        Column("FLG_MMPP", "TEXT", "1 = marca propia (MMPP); 0 = marca comercial (MMCC)."),
+        Column("F_PRECIO_COSTO", "REAL", "Costo unitario (sin impuestos)."),
         Column(
             "ELASTICIDAD",
             "REAL",
