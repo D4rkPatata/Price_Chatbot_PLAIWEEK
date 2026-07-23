@@ -39,14 +39,8 @@ class Settings(BaseSettings):
     query_timeout_s: float = 15.0
 
     # --- Reglas de negocio (las consume el LLM #2) -----------------------
-    # Margen mínimo aceptable sobre el precio de venta (fracción, no %).
-    margen_minimo: float = 0.15
-    # Margen "saludable" por debajo del cual se advierte (warning suave).
-    margen_objetivo: float = 0.25
-    # Umbral de paridad: cuánto por encima/debajo de competencia se tolera.
-    paridad_tolerancia: float = 0.05  # ±5%
-    # IGV (Perú): el precio propuesto (PVP) viene con impuesto; se divide entre
-    # esto para obtener el precio sin impuestos antes de calcular el GPE.
+    # IGV (Perú), referencial. Los umbrales de GPE/IPC/paridad viven ahora
+    # directamente en el prompt del asesor (insight_system_prompt.txt).
     igv: float = 1.18
     # Ventana "U3M" (últimos 3 meses) para volumen/monto y estacionalidad.
     u3m_dias: int = 90

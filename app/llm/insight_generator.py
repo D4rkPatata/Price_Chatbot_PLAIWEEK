@@ -41,13 +41,7 @@ def _compact_facts(facts: dict[str, list[dict[str, Any]]]) -> dict:
 def _business_rules_block() -> str:
     return (
         "REGLAS DE NEGOCIO:\n"
-        f"- margen_minimo: {settings.margen_minimo} "
-        f"({settings.margen_minimo * 100:.0f}% sobre precio de venta)\n"
-        f"- margen_objetivo: {settings.margen_objetivo} "
-        f"({settings.margen_objetivo * 100:.0f}%)\n"
-        f"- paridad_tolerancia: {settings.paridad_tolerancia} "
-        f"(±{settings.paridad_tolerancia * 100:.0f}% vs. competencia)\n"
-        f"- IGV: {settings.igv} (el PVP propuesto se divide entre esto para quitar impuestos)\n"
+        f"- IGV: {settings.igv} (referencial)\n"
         f"- u3m_dias: {settings.u3m_dias} (días de la ventana U3M para venta diaria promedio)"
     )
 

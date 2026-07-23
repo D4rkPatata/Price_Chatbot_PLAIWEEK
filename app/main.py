@@ -64,17 +64,20 @@ def list_skus() -> list[dict]:
     """
     connector = get_connector()
     try:
+        # precio_actual = precio_propio del ÚLTIMO RELEVO (última fecha), la misma
+        # definición que usa el reporte (datos_base). Antes usaba AVG y no coincidía.
         return connector.run_select(
             """
             SELECT s.COD_SKU AS cod_sku,
                    s.DESC_SKU AS desc_sku,
                    ROUND(s.ELASTICIDAD, 2) AS elasticidad,
                    CASE s.FLG_MMPP WHEN '1' THEN 'MMPP' ELSE 'MMCC' END AS tipo_marca,
-                   ROUND(AVG(p.precio_propio), 2) AS precio_actual
+                   (SELECT ROUND(p.precio_propio, 2)
+                      FROM precios p
+                     WHERE p.COD_SKU = s.COD_SKU
+                     ORDER BY p.fecha DESC LIMIT 1) AS precio_actual
             FROM sku s
-            LEFT JOIN precios p ON s.COD_SKU = p.COD_SKU
             WHERE s.COD_SKU_COMPARABLE IS NOT NULL
-            GROUP BY s.COD_SKU, s.DESC_SKU, s.ELASTICIDAD, s.FLG_MMPP
             ORDER BY s.DESC_SKU
             """
         )
