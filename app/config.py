@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     margen_objetivo: float = 0.25
     # Umbral de paridad: cuánto por encima/debajo de competencia se tolera.
     paridad_tolerancia: float = 0.05  # ±5%
+    # IGV (Perú): el precio propuesto (PVP) viene con impuesto; se divide entre
+    # esto para obtener el precio sin impuestos antes de calcular el GPE.
+    igv: float = 1.18
+    # Ventana "U3M" (últimos 3 meses) para volumen/monto y estacionalidad.
+    u3m_dias: int = 90
 
     # --- LLM: proveedor -------------------------------------------------
     # "claude" (Anthropic) o "gemini" (Google). Conmutable por .env.

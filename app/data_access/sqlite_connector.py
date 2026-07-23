@@ -43,15 +43,17 @@ _TABLES: dict[str, dict[str, Any]] = {
             ("DESC_DIVISION", "TEXT", False), ("DESC_DEPARTAMENTO", "TEXT", False),
             ("DESC_SUBDEPARTAMENTO", "TEXT", False), ("DESC_CLASE", "TEXT", False),
             ("DESC_SUBCLASE", "TEXT", False), ("DESC_ESTADO", "TEXT", False),
+            ("FAMILIA", "TEXT", False),
             ("F_PRECIO_COSTO", "REAL", True), ("ELASTICIDAD", "REAL", True),
         ],
     },
     "ventas": {
         "csv": lambda: settings.venta_path,
         "columns": [
-            ("id_diaventa", "TEXT", False), ("cod_sku", "TEXT", False),
-            ("id_sku", "TEXT", False), ("VTA_SI", "REAL", True),
-            ("UNIDADES", "REAL", True),
+            ("ID_DIAVENTA", "TEXT", False), ("ID_SKU", "TEXT", False),
+            ("COD_SKU", "TEXT", False),
+            ("VTA", "REAL", True), ("VTA_SI", "REAL", True),
+            ("UNIDADES", "REAL", True), ("COSTO_VENTA", "REAL", True),
         ],
     },
 }
@@ -86,9 +88,8 @@ def _load_table(con: sqlite3.Connection, name: str, spec: dict[str, Any]) -> Non
                 row.append(_to_float(val) if is_num else (val if val != "" else None))
             rows.append(row)
         con.executemany(insert, rows)
-    # Índice por la clave de join más usada.
-    key = "COD_SKU" if name in ("precios", "sku") else "cod_sku"
-    con.execute(f'CREATE INDEX "idx_{name}_sku" ON "{name}" ("{key}")')
+    # Índice por la clave de join (COD_SKU en las tres tablas).
+    con.execute(f'CREATE INDEX "idx_{name}_sku" ON "{name}" ("COD_SKU")')
 
 
 def build_sqlite(db_path: Path | None = None) -> Path:

@@ -19,12 +19,23 @@ _PROMPT_PATH = Path(__file__).parent / "prompts" / "insight_system_prompt.txt"
 
 
 def _json_default(o: Any) -> Any:
-    """Serializa tipos que DuckDB devuelve y json no maneja de fábrica."""
+    """Serializa tipos que el motor devuelve y json no maneja de fábrica."""
     if isinstance(o, (dt.date, dt.datetime)):
         return o.isoformat()
     if isinstance(o, Decimal):
         return float(o)
     return str(o)
+
+
+def _compact_facts(facts: dict[str, list[dict[str, Any]]]) -> dict:
+    """Reduce tokens: redondea floats a 2 decimales (6805563.290000014 -> 6805563.29)."""
+    def r(v: Any) -> Any:
+        return round(v, 2) if isinstance(v, float) else v
+
+    return {
+        nombre: [{k: r(v) for k, v in row.items()} for row in rows]
+        for nombre, rows in facts.items()
+    }
 
 
 def _business_rules_block() -> str:
@@ -35,7 +46,9 @@ def _business_rules_block() -> str:
         f"- margen_objetivo: {settings.margen_objetivo} "
         f"({settings.margen_objetivo * 100:.0f}%)\n"
         f"- paridad_tolerancia: {settings.paridad_tolerancia} "
-        f"(±{settings.paridad_tolerancia * 100:.0f}% vs. competencia)"
+        f"(±{settings.paridad_tolerancia * 100:.0f}% vs. competencia)\n"
+        f"- IGV: {settings.igv} (el PVP propuesto se divide entre esto para quitar impuestos)\n"
+        f"- u3m_dias: {settings.u3m_dias} (días de la ventana U3M para venta diaria promedio)"
     )
 
 
@@ -48,7 +61,10 @@ def build_insight_prompt(
     facts: dict[str, list[dict[str, Any]]],
 ) -> str:
     """Arma el user prompt del LLM #2 con el encargo + hechos + reglas."""
-    facts_json = json.dumps(facts, ensure_ascii=False, indent=2, default=_json_default)
+    # JSON compacto (sin indentación) + floats redondeados = menos tokens.
+    facts_json = json.dumps(
+        _compact_facts(facts), ensure_ascii=False, separators=(",", ":"), default=_json_default
+    )
     return (
         "CAMBIO DE PRECIO PROPUESTO:\n"
         f"- SKU (COD_SKU): {cod_sku}\n"

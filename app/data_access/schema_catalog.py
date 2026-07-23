@@ -44,11 +44,7 @@ PRECIOS = Table(
     columns=[
         Column("COD_SKU", "TEXT", "Código de SKU. Join con sku y ventas."),
         Column("DESC_SKU", "TEXT", "Descripción del producto."),
-        Column("DESC_DIVISION", "TEXT", "División comercial."),
-        Column("DESC_DEPARTAMENTO", "TEXT", "Departamento."),
-        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento (útil para comparar pares)."),
-        Column("TIPO_KVI", "TEXT", "Clasificación KVI (Known Value Item)."),
-        Column("TIPO_KVC", "TEXT", "Clasificación KVC (Known Value Category)."),
+        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento (para comparar pares)."),
         Column("fecha", "TEXT", "Fecha del registro de precio/venta."),
         Column("precio_propio", "REAL", "Precio propio vigente ese día."),
         Column("precio_competencia", "REAL", "Precio de competencia observado ese día."),
@@ -67,15 +63,9 @@ SKU = Table(
     columns=[
         Column("COD_SKU", "TEXT", "Código de SKU. Join con precios y ventas."),
         Column("DESC_SKU", "TEXT", "Descripción del producto."),
-        Column("DESC_MARCA", "TEXT", "Marca."),
-        Column("DESC_PROVEEDOR", "TEXT", "Proveedor."),
-        Column("DESC_DIVISION", "TEXT", "División."),
-        Column("DESC_DEPARTAMENTO", "TEXT", "Departamento."),
-        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento."),
-        Column("DESC_CLASE", "TEXT", "Clase."),
-        Column("DESC_SUBCLASE", "TEXT", "Subclase."),
-        Column("DESC_ESTADO", "TEXT", "Estado del SKU (Activo/Inactivo)."),
-        Column("F_PRECIO_COSTO", "REAL", "Costo unitario. Usar para calcular margen."),
+        Column("DESC_SUBDEPARTAMENTO", "TEXT", "Subdepartamento (fallback de comparables)."),
+        Column("FAMILIA", "TEXT", "Familia del producto (agrupador para comparables)."),
+        Column("F_PRECIO_COSTO", "REAL", "Costo unitario (sin impuestos). Usar para el GPE sugerido."),
         Column(
             "ELASTICIDAD",
             "REAL",
@@ -88,17 +78,17 @@ SKU = Table(
 VENTAS = Table(
     name="ventas",
     description=(
-        "Historia larga de ventas diarias (~1 año). NO tiene precio. "
-        "Es la fuente para estacionalidad/timing: comparar fechas "
-        "equivalentes de periodos anteriores."
+        "Historia larga de ventas diarias (~1 año). NO tiene precio unitario, "
+        "pero sí montos y costo. Fuente para: GPE real, volumen U3M (últimos 3 "
+        "meses), estacionalidad mensual y participación por día de la semana."
     ),
-    grain="una fila por SKU y día (id_diaventa)",
+    grain="una fila por SKU y día (ID_DIAVENTA)",
     columns=[
-        Column("id_diaventa", "TEXT", "Fecha de la venta."),
-        Column("cod_sku", "TEXT", "Código de SKU. Join con precios y sku."),
-        Column("id_sku", "TEXT", "Identificador interno de SKU."),
-        Column("VTA_SI", "REAL", "Venta (monto) del día."),
+        Column("ID_DIAVENTA", "TEXT", "Fecha de la venta (ISO 'YYYY-MM-DD')."),
+        Column("COD_SKU", "TEXT", "Código de SKU. Join con precios y sku."),
+        Column("VTA_SI", "REAL", "Venta del día SIN impuestos. Usar para el GPE real."),
         Column("UNIDADES", "REAL", "Unidades vendidas del día."),
+        Column("COSTO_VENTA", "REAL", "Costo de la venta del día. Usar para el GPE real."),
     ],
 )
 
@@ -114,5 +104,5 @@ def render_schema_for_prompt() -> str:
         for c in t.columns:
             lines.append(f"    {c.name} {c.dtype}  -- {c.description}")
         lines.append("")
-    lines.append(f"JOIN: precios.COD_SKU = sku.COD_SKU = ventas.cod_sku")
+    lines.append("JOIN: precios.COD_SKU = sku.COD_SKU = ventas.COD_SKU")
     return "\n".join(lines)

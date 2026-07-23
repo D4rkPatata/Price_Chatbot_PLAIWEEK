@@ -56,17 +56,23 @@ def health() -> dict[str, str]:
 
 @app.get("/skus")
 def list_skus() -> list[dict]:
-    """Lista de SKUs para el selector del frontend (con precio propio reciente)."""
+    """SKUs seleccionables en el frontend.
+
+    Solo se listan productos CON elasticidad (los únicos que se pueden simular).
+    Los SKU sin elasticidad siguen en la base y sirven de comparables.
+    """
     connector = get_connector()
     try:
         return connector.run_select(
             """
             SELECT s.COD_SKU AS cod_sku,
                    s.DESC_SKU AS desc_sku,
+                   ROUND(s.ELASTICIDAD, 2) AS elasticidad,
                    ROUND(AVG(p.precio_propio), 2) AS precio_actual
             FROM sku s
             LEFT JOIN precios p ON s.COD_SKU = p.COD_SKU
-            GROUP BY s.COD_SKU, s.DESC_SKU
+            WHERE s.ELASTICIDAD IS NOT NULL
+            GROUP BY s.COD_SKU, s.DESC_SKU, s.ELASTICIDAD
             ORDER BY s.DESC_SKU
             """
         )
